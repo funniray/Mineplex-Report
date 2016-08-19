@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+		<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+		<link href="http://vjs.zencdn.net/5.10.4/video-js.css" rel="stylesheet">
+		<script>
+			var exampleSocket = new WebSocket("ws://localhost"+":8080");
+			exampleSocket.onopen = function (event) {
+			  exampleSocket.send(JSON.stringify({type:"getVideo"}));
+			//exampleSocket.send(JSON.stringify({type:"upload",data:{title:"Test Video",description:"this is a test video",time:"30"}}))
+			};
+			exampleSocket.onmessage = function (event) {
+			  var data = JSON.parse(event.data);
+			  switch (data.type){
+				case "progress":
+					updateProgress(data.data.progress,data.data.bar);
+					break;
+				case "done":
+					submitForm(data.data);
+					break;
+				case "video":
+					var video = videojs('my-video');
+					video.src(data.data)
+					console.log(data.data)
+					break;
+				case "open":
+					window.open(data.data,"_blank");
+					break;
+				case "uploadFinish":
+					makeForm(data.data);
+					break;
+				case "info":
+					console.log(data.data);
+					break;
+				case "error":
+					throw data.data;
+					break;
+				default:
+					console.log(data);
+				}
+			}
+			function updateProgress(progress,bar){
+				if (Math.floor(progress)>=Number($("#"+bar).html().split("%")[0])){
+					if (Math.floor(progress) == 99){
+						progress = 100
+					}
+				}
+				if (document.getElementById(bar).style !=null){var progressw = progress/2}else{var progressw = progress}
+				$("#"+bar).html(Math.floor(progress)+"%")
+				document.getElementById(bar).style = "width:"+progressw+"%";
+			}
+		$(document).ready(function(){
+			$('#trimbox').click(function() {
+				console.log(document.forms["report"]["trimbox"].checked)
+				if (document.forms["report"]["trimbox"].checked){
+					$('#trim').hide().slideDown();
+					var video = videojs('my-video');
+					var duration = video.duration();
+					document.getElementById("trimer").max = duration;
+				}else{
+					$('#trim').slideUp();
+				}
+			});
+		});
+		var upload = function(){
+			if (confirm('Are you sure you want to pust this to the Mineplex form?')){
+				exampleSocket.send(JSON.stringify({
+					type:'upload',
+						data:{title:document.forms['report']['offender'].value+' using '+document.forms['report']['offence'].value,
+						description:'In this video I find '+document.forms['report']['offender'].value+' using '+document.forms['report']['offence'].value+' on the Mineplex game '+document.forms['report']['on'].value,
+						time:document.forms['report']['trimer'].value,
+						size:videojs('my-video').duration()
+					}
+				})); 
+				document.getElementById('upload').disabled = 'disabled'; 
+				if (document.forms['report']['trimer'].value != "0"){
+					$('.progress').hide().slideDown();
+					$('.progress').append('<div class="progress-bar progress-bar-warning" role="progressbar" id="ffmpeg" style="width:0%">0%</div>')
+					var ffmpeg = true;
+				}else{
+					$('.progress').hide().slideDown();
+					var ffmpeg = false;
+				}
+			}
+		}
+		function makeForm(data){
+			var subject = document.forms['report']['offender'].value+'\ using\ '+document.forms['report']['offence'].value+' on '+document.forms['report']['on'].value;
+			var body = "1. Name of Offender: "+document.forms['report']['offender'].value+"		2. Name of Offense: "+document.forms['report']['offence'].value+"		3. Evidence: [url=https://youtu.be/"+data.id+"]https://youtu.be/"+data.id+"[/url]				[youtube]"+data.id+"[/youtube]";
+			//demo_post_enctype.asp http://mineplex.com/forums/newthread/2449058/m/11929946
+			var formtemplate = "<form action='http://mineplex.com/forums/newthread/2449058/m/11929946' name='postform' enctype='multipart/form-data' method='post'><input type='text' name='m' value='11929946'><input type='text' name='do' value='post-thread'> <input type='text' name='subject' value='"+subject+"'><input name='content' type='text' value='"+body+"'><input name='file' type='text' value=''><input name='show_signature' type='text' value='1'></form>";
+			console.log(formtemplate)
+			$('head').append(formtemplate)
+			setTimeout(function(){document.forms['postform'].submit()},100);
+		}
+		</script>
+		<style>
+			.input{
+				border-radius: 5px;
+			}
+			.noshow{
+				display:none;
+				padding-bottom:10px;
+				padding-top:10px
+			}
+		</style>
+	</head>
+	<body id="body">
+		<form id="report" style="margin-left:10%; margin-right:10%">
+			Name of Offender   <input class="input" type="text" name="offender"><br>
+			<br>
+			Offence   <input class="input" type="text" name="offence">   on   <input class="input" type="text" name="on"><br>
+			<br>
+			Evidence <br>
+			<video id="my-video" width="480" height="360" class="video-js" controls preload="auto" data-setup="{}">
+			<!--<source src="Replay.flv" type='video/x-flv'>-->
+			<p class="vjs-no-js">
+			  To view this video please enable JavaScript, and consider upgrading to a web browser that
+			  <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+			</p>
+			</video>
+			<script src="http://vjs.zencdn.net/5.10.4/video.js"></script>
+			<input id="trimbox" type="checkbox" name="trimbox">trim<br>
+			<div  class="noshow" id="trim">
+				<input id="trimer" type="range" min="0" max="0" value=0 step=".001" style="width:25%" /><button onclick="document.getElementById('trimer').value = videojs('my-video').currentTime(); return false" >Set to video time</button><br>
+			</div>
+		</form>	
+		<button id="upload" onclick="upload(); return false" style="background-color:green;">Submit</button><button onclick="exampleSocket.send(JSON.stringify({type:'cancel'}));alert('You can now close this page!'); return false" style="background-color:red">Cancel</button>
+		<div class="container">
+			<div class="progress">
+				<div class="progress-bar progress-bar-success" id="main" role="progressbar" style="width:0%">
+					0%
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

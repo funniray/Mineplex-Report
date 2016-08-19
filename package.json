@@ -1,0 +1,26 @@
+{
+  "name": "mineplex-report",
+  "version": "1.0.0",
+  "description": "reports players for hacking on mineplex",
+  "main": "ytul.js",
+  "dependencies": {
+    "httpdispatcher": "^1.0.0",
+    "json": "^9.0.4",
+    "connect": "^3.4.1",
+    "opn": "^4.0.2",
+    "pretty-bytes": "^3.0.1",
+    "bug-killer": "^4.2.3",
+    "r-json": "^1.2.3",
+    "spawn": "^0.0.1",
+    "serve-static": "^1.11.1",
+    "ws": "^1.1.1",
+    "lien": "^1.0.3",
+    "youtube-api": "^2.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
